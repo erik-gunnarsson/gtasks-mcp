@@ -11,6 +11,12 @@ A Model Context Protocol (MCP) server for Google Tasks integration with Raycast.
 - 🛡️ **Privacy-First**: OAuth credentials stored locally, never shared
 - 🔒 **Secure**: Input validation, sanitization, and error handling to prevent security vulnerabilities
 
+### Todo
+
+⌛ Add auto prio/urgent labeling
+⌛ Add weekly schedual assistant
+
+
 ## Components
 
 ### Tools
