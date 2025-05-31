@@ -1,9 +1,15 @@
-# Google Tasks MCP Server
+# Google Tasks MCP Server for Raycast
 
-![gtasks mcp logo](./logo.jpg)
-[![smithery badge](https://smithery.ai/badge/@zcaceres/gtasks)](https://smithery.ai/server/@zcaceres/gtasks)
+A Model Context Protocol (MCP) server for Google Tasks integration with Raycast. This server enables seamless task management directly from Raycast using natural language commands.
 
-This MCP server integrates with Google Tasks to allow listing, reading, searching, creating, updating, and deleting tasks.
+## Features
+
+- 📝 **Full CRUD Operations**: Create, read, update, delete, and search Google Tasks
+- 🔍 **Smart Search**: Search through tasks by title and notes
+- 📋 **List Management**: Work with multiple task lists
+- ⚡ **Fast Integration**: Easy installation via Raycast MCP Registry
+- 🛡️ **Privacy-First**: OAuth credentials stored locally, never shared
+- 🔒 **Secure**: Input validation, sanitization, and error handling to prevent security vulnerabilities
 
 ## Components
 
@@ -11,7 +17,7 @@ This MCP server integrates with Google Tasks to allow listing, reading, searchin
 
 - **search**
   - Search for tasks in Google Tasks
-  - Input: `query` (string): Search query
+  - Input: `query` (string): Search query (max 500 characters)
   - Returns matching tasks with details
 
 - **list**
@@ -23,8 +29,8 @@ This MCP server integrates with Google Tasks to allow listing, reading, searchin
   - Create a new task in Google Tasks
   - Input:
     - `taskListId` (string, optional): Task list ID
-    - `title` (string, required): Task title
-    - `notes` (string, optional): Task notes
+    - `title` (string, required): Task title (max 1024 characters)
+    - `notes` (string, optional): Task notes (max 8192 characters)
     - `due` (string, optional): Due date
   - Returns confirmation of task creation
 
@@ -34,8 +40,8 @@ This MCP server integrates with Google Tasks to allow listing, reading, searchin
     - `taskListId` (string, optional): Task list ID
     - `id` (string, required): Task ID
     - `uri` (string, required): Task URI
-    - `title` (string, optional): New task title
-    - `notes` (string, optional): New task notes
+    - `title` (string, optional): New task title (max 1024 characters)
+    - `notes` (string, optional): New task notes (max 8192 characters)
     - `status` (string, optional): New task status ("needsAction" or "completed")
     - `due` (string, optional): New due date
   - Returns confirmation of task update
@@ -61,7 +67,25 @@ The server provides access to Google Tasks resources:
   - Supports reading task details including title, status, due date, notes, and other metadata
   - Can be listed, read, created, updated, and deleted using the provided tools
 
-## Getting started
+## Security Features
+
+This MCP server includes several security enhancements:
+
+- **Input Validation**: All user inputs are validated for length limits and sanitized to prevent injection attacks
+- **Error Handling**: Error messages are sanitized to prevent information disclosure
+- **Container Security**: Docker image runs as non-root user with minimal permissions
+- **Credential Management**: OAuth credentials are stored securely and excluded from version control
+
+### Security Considerations
+
+- Keep your OAuth credentials (`gcp-oauth.keys.json`) secure and never commit them to version control
+- Regularly update dependencies to patch security vulnerabilities
+- Monitor API usage for unusual patterns
+- Use the principle of least privilege when configuring OAuth scopes
+
+## Installation for Raycast
+
+### Prerequisites
 
 1. [Create a new Google Cloud project](https://console.cloud.google.com/projectcreate)
 2. [Enable the Google Tasks API](https://console.cloud.google.com/workspace-api/products)
@@ -69,40 +93,104 @@ The server provides access to Google Tasks resources:
 4. Add scopes `https://www.googleapis.com/auth/tasks`
 5. [Create an OAuth Client ID](https://console.cloud.google.com/apis/credentials/oauthclient) for application type "Desktop App"
 6. Download the JSON file of your client's OAuth keys
-7. Rename the key file to `gcp-oauth.keys.json` and place into the root of this repo (i.e. `gcp-oauth.keys.json`)
+7. Clone this repository and rename the key file to `gcp-oauth.keys.json` in the root directory
 
-Make sure to build the server with either `npm run build` or `npm run watch`.
+### Setup
 
-### Installing via Smithery
+1. **Clone and build the server:**
+   ```bash
+   git clone <this-repository>
+   cd gtasks-mcp
+   npm install
+   npm run build
+   ```
 
-To install Google Tasks Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@zcaceres/gtasks):
+2. **Authenticate with Google:**
+   ```bash
+   npm run auth
+   ```
+   This will open a browser window for OAuth authentication and save credentials locally.
+
+3. **Install in Raycast MCP Registry:**
+   - Open Raycast and search for "Model Context Protocol Registry"
+   - Install the MCP Registry extension
+   - Open the extension and click "Add Server"
+   - Copy the configuration from `raycast-mcp-config.json` and update the paths:
+     ```json
+     {
+       "name": "gTasks",
+       "command": "/opt/homebrew/bin/node",
+       "args": ["/your/full/path/to/gtasks-mcp/dist/index.js"],
+       "env": {
+         "NODE_PATH": "/your/full/path/to/gtasks-mcp/node_modules"
+       }
+     }
+     ```
+   - Replace `/your/full/path/to/gtasks-mcp/` with your actual project path (e.g., `/Users/yourname/projects/gtasks-mcp/`)
+
+![Raycast Setup](./setup.png)
+
+### Usage Examples in Raycast
+
+Once installed, you can use natural language commands in Raycast AI:
+
+- **"Show me my Google Tasks"** - Lists all your tasks
+- **"Create a task 'Buy groceries' due tomorrow"** - Creates a new task
+- **"Search for tasks about 'meeting'"** - Searches through your tasks
+- **"Mark task completed"** - Updates task status
+- **"Delete the task about 'old project'"** - Removes a task
+
+## Development
+
+### Local Development
 
 ```bash
-npx -y @smithery/cli install @zcaceres/gtasks --client claude
+npm install
+npm run dev          # Watch mode for development
+npm run build        # Build for production
+npm run auth         # Authenticate with Google
+npm start            # Run the server
 ```
 
-### Authentication
+### Testing the Server
 
-To authenticate and save credentials:
+You can test the server locally before installing in Raycast:
 
-1. Run the server with the `auth` argument: `npm run start auth`
-2. This will open an authentication flow in your system browser
-3. Complete the authentication process
-4. Credentials will be saved in the root of this repo (i.e. `.gdrive-server-credentials.json`)
+```bash
+# Test authentication
+npm run auth
 
-### Usage with Desktop App
+# Test server startup
+npm start
+```
 
-To integrate this server with the desktop app, add the following to your app's server configuration:
+## Alternative Installation Methods
+
+### For Claude Desktop
+
+If you want to use this with Claude Desktop instead:
 
 ```json
 {
   "mcpServers": {
     "gtasks": {
-      "command": "/opt/homebrew/bin/node",
+      "command": "node",
       "args": [
-        "{ABSOLUTE PATH TO FILE HERE}/dist/index.js"
+        "/path/to/your/gtasks-mcp/dist/index.js"
       ]
     }
   }
 }
 ```
+
+### For Other MCP Clients
+
+This server follows the standard Model Context Protocol and can be used with any MCP-compatible client like Cursor, Windsurf, or other AI assistants that support MCP.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - see the [LICENSE](LICENSE) file for details.

@@ -8,6 +8,23 @@ import { GaxiosResponse } from "gaxios";
 import { tasks_v1 } from "googleapis";
 
 const MAX_TASK_RESULTS = 100;
+const MAX_TITLE_LENGTH = 1024;
+const MAX_NOTES_LENGTH = 8192;
+const MAX_SEARCH_LENGTH = 500;
+
+// Input sanitization helper
+function sanitizeInput(input: string): string {
+  if (!input) return "";
+  // Remove potential HTML/script tags and trim whitespace
+  return input.replace(/<[^>]*>/g, "").trim();
+}
+
+// Input validation helper
+function validateInput(input: string, maxLength: number, fieldName: string): void {
+  if (input && input.length > maxLength) {
+    throw new Error(`${fieldName} exceeds maximum length of ${maxLength} characters`);
+  }
+}
 
 export class TaskResources {
   static async read(request: ReadResourceRequest, tasks: tasks_v1.Tasks) {
@@ -112,7 +129,8 @@ export class TaskActions {
           const items = tasksResponse.data.items || [];
           allTasks = allTasks.concat(items);
         } catch (error) {
-          console.error(`Error fetching tasks for list ${taskList.id}:`, error);
+          // Log error without exposing sensitive details
+          console.error(`Error fetching tasks for list: API error occurred`);
         }
       }
     }
@@ -131,9 +149,16 @@ export class TaskActions {
       throw new Error("Task title is required");
     }
 
+    // Validate and sanitize inputs
+    validateInput(taskTitle, MAX_TITLE_LENGTH, "Task title");
+    validateInput(taskNotes, MAX_NOTES_LENGTH, "Task notes");
+
+    const sanitizedTitle = sanitizeInput(taskTitle);
+    const sanitizedNotes = sanitizeInput(taskNotes);
+
     const task = {
-      title: taskTitle,
-      notes: taskNotes,
+      title: sanitizedTitle,
+      notes: sanitizedNotes,
       due: taskDue,
     };
 
@@ -171,10 +196,18 @@ export class TaskActions {
       throw new Error("Task ID is required");
     }
 
+    // Validate and sanitize inputs
+    if (taskTitle) {
+      validateInput(taskTitle, MAX_TITLE_LENGTH, "Task title");
+    }
+    if (taskNotes) {
+      validateInput(taskNotes, MAX_NOTES_LENGTH, "Task notes");
+    }
+
     const task = {
       id: taskId,
-      title: taskTitle,
-      notes: taskNotes,
+      title: taskTitle ? sanitizeInput(taskTitle) : taskTitle,
+      notes: taskNotes ? sanitizeInput(taskNotes) : taskNotes,
       status: taskStatus,
       due: taskDue,
     };
@@ -217,7 +250,7 @@ export class TaskActions {
     const taskId = request.params.arguments?.id as string;
 
     if (!taskId) {
-      throw new Error("Task URI is required");
+      throw new Error("Task ID is required");
     }
 
     await tasks.tasks.delete({
@@ -239,11 +272,19 @@ export class TaskActions {
   static async search(request: CallToolRequest, tasks: tasks_v1.Tasks) {
     const userQuery = request.params.arguments?.query as string;
 
+    if (!userQuery) {
+      throw new Error("Search query is required");
+    }
+
+    // Validate and sanitize search input
+    validateInput(userQuery, MAX_SEARCH_LENGTH, "Search query");
+    const sanitizedQuery = sanitizeInput(userQuery);
+
     const allTasks = await this._list(request, tasks);
     const filteredItems = allTasks.filter(
       (task) =>
-        task.title?.toLowerCase().includes(userQuery.toLowerCase()) ||
-        task.notes?.toLowerCase().includes(userQuery.toLowerCase()),
+        task.title?.toLowerCase().includes(sanitizedQuery.toLowerCase()) ||
+        task.notes?.toLowerCase().includes(sanitizedQuery.toLowerCase()),
     );
 
     const taskList = this.formatTaskList(filteredItems);
@@ -252,7 +293,7 @@ export class TaskActions {
       content: [
         {
           type: "text",
-          text: `Found ${allTasks.length} tasks:\n${taskList}`,
+          text: `Found ${filteredItems.length} matching tasks:\n${taskList}`,
         },
       ],
       isError: false,

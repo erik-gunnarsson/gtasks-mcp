@@ -86,6 +86,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             query: {
               type: "string",
               description: "Search query",
+              maxLength: 500,
             },
           },
           required: ["query"],
@@ -117,10 +118,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             title: {
               type: "string",
               description: "Task title",
+              maxLength: 1024,
             },
             notes: {
               type: "string",
               description: "Task notes",
+              maxLength: 8192,
             },
             due: {
               type: "string",
@@ -183,10 +186,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             title: {
               type: "string",
               description: "Task title",
+              maxLength: 1024,
             },
             notes: {
               type: "string",
               description: "Task notes",
+              maxLength: 8192,
             },
             status: {
               type: "string",
@@ -245,7 +250,6 @@ async function authenticateAndSaveCredentials() {
     "../gcp-oauth.keys.json",
   );
 
-  console.log(p);
   const auth = await authenticate({
     keyfilePath: p,
     scopes: ["https://www.googleapis.com/auth/tasks"],

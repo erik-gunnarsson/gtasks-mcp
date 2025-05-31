@@ -20,15 +20,26 @@ RUN npm run build
 # Stage 2: Create the final image for running the app
 FROM node:18-alpine
 
+# Add security updates and create non-root user
+RUN apk update && apk upgrade && \
+    addgroup -g 1001 -S appgroup && \
+    adduser -S -D -u 1001 -G appgroup appuser
+
 # Set the working directory
 WORKDIR /app
 
-# Copy built files from the builder stage
-COPY --from=builder /app/dist /app/dist
-COPY --from=builder /app/package.json /app/package-lock.json /app
+# Copy built files from the builder stage with proper ownership
+COPY --from=builder --chown=appuser:appgroup /app/dist /app/dist
+COPY --from=builder --chown=appuser:appgroup /app/package.json /app/package-lock.json /app
 
 # Install only production dependencies
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Remove unnecessary packages and files
+RUN apk del --purge && rm -rf /var/cache/apk/*
+
+# Switch to non-root user
+USER appuser
 
 # Set the command to run the app
 CMD ["node", "dist/index.js"]
