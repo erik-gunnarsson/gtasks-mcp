@@ -16,7 +16,6 @@ A Model Context Protocol (MCP) server for Google Tasks integration with Raycast.
 ⌛ Add auto prio/urgent labeling
 ⌛ Add weekly schedual assistant
 
-
 ## Components
 
 ### Tools
