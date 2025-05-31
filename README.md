@@ -13,8 +13,8 @@ A Model Context Protocol (MCP) server for Google Tasks integration with Raycast.
 
 ### Todo
 
-⌛ Add auto prio/urgent labeling
-⌛ Add weekly schedual assistant
+  - ⌛ Add auto prio/urgent labeling
+  - ⌛ Add weekly schedual assistant
 
 ## Components
 
